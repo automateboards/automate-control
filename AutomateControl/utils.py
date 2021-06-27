@@ -71,6 +71,10 @@ class REG():
     RW_GPIO4_DIG_VAL2       = 0x6B
     RW_GPAB_DIG_VAL1        = 0x6C
     RW_GPIO_INT_VAL1        = 0x70
+    RW_GPIO1_DIG_VAL3       = 0x74
+    RW_GPIO2_DIG_VAL3       = 0x75
+    RW_GPIO3_DIG_VAL3       = 0x76
+    RW_GPIO4_DIG_VAL3       = 0x77
 
     RW_UART_RS485_CONF1     = 0x80
     RW_UART_RS485_CONF2     = 0x81
@@ -103,6 +107,36 @@ class REG():
     R_GPIO3_CUR             = 0xFE
     R_GPIO4_CUR             = 0xFF
 
+    R_CAN_RX_STATUS         = 0xB0
+    R_CAN_RX_PEND           = 0xB1
+    R_CAN_RX_LEN            = 0xB2  # Data length of first frame in FIFO
+    R_CAN_RX_ID1            = 0xB3
+    R_CAN_RX_ID2            = 0xB4
+    R_CAN_RX_DATA1          = 0xB5
+    R_CAN_RX_DATA2          = 0xB6
+    R_CAN_RX_DATA3          = 0xB7
+    R_CAN_RX_DATA4          = 0xB8
+    R_CAN_RX_ERRCNT         = 0xB9
+
+    R_CAN_TX_STATUS         = 0xC0
+    R_CAN_TX_PEND           = 0xC1
+    RW_CAN_TX_LEN           = 0xC2
+    RW_CAN_TX_ID1           = 0xC3
+    RW_CAN_TX_ID2           = 0xC4
+    RW_CAN_TX_DATA1         = 0xC5
+    RW_CAN_TX_DATA2         = 0xC6
+    RW_CAN_TX_DATA3         = 0xC7
+    RW_CAN_TX_DATA4         = 0xC8
+    RW_CAN_TX_SEND          = 0xC9
+    R_CAN_TX_ERRCNT         = 0xCA
+
+    RW_CAN_CONF1            = 0x85
+    RW_CAN_CONF2            = 0x86
+    RW_CAN_FILT1_HIGH       = 0x87
+    RW_CAN_FILT1_LOW        = 0x88
+    RW_CAN_FILT2_HIGH       = 0x89
+    RW_CAN_FILT2_LOW        = 0x8A
+
 
 class EnumBase(IntEnum):
     
@@ -124,24 +158,25 @@ class GPIO_FUNC(EnumBase):
     CNT = 0x03
     CNT_RST = 0x04
     CNT_S0 = 0x05
-    RC_SERVO = 0x06
-    STEPPER = 0x07
-    AO_0_5V_OUT = 0x08
-    AO_0_10V_OUT = 0x09
-    AO_0_24V_OUT = 0x0A
-    AI_RATIO_3V3 = 0x0B
-    AI_RATIO_5V0 = 0x0C
-    AI_0_7V5 = 0x0D
-    AI_0_15V = 0x0E
+    CNT_S0_1KKWH = 0x06
+    RC_SERVO = 0x07
+    STEPPER = 0x08
+    AO_0_5V_OUT = 0x09
+    AO_0_10V_OUT = 0x0A
+    AO_0_24V_OUT = 0x0B
+    AI_RATIO_3V3 = 0x0C
+    AI_RATIO_5V0 = 0x0D
+    AI_0_7V5 = 0x0E
+    AI_0_15V = 0x0F
 
 
 class GPIO_MODE(EnumBase):
-    MODE_NONE = 0x00
-    MODE_AN_IN = 0x01
-    MODE_AN_OUT = 0x02
-    MODE_DIG_IN = 0x03
-    MODE_DIG_OUT = 0x04
-    MODE_DIG_OUT_OD = 0x05
+    OFF = 0x00
+    AN_IN = 0x01
+    AN_OUT = 0x02
+    DIG_IN = 0x03
+    DIG_OUT = 0x04
+    DIG_OUT_OD = 0x05
 
 
 class GPIO_MODE_GPAB(EnumBase):
@@ -169,14 +204,14 @@ class GPIO_PULL_GPAB(EnumBase):
 
 
 class GPIO_HYST(EnumBase):
-    HYST_0MV = 0x00
-    HYST_25MV = 0x01
-    HYST_50MV = 0x02
-    HYST_100MV = 0x03
-    HYST_200MV = 0x04
-    HYST_400MV = 0x05
-    HYST_800MV = 0x06
-    HYST_1600MV = 0x07
+    HYS_0MV = 0x00
+    HYS_25MV = 0x01
+    HYS_50MV = 0x02
+    HYS_100MV = 0x03
+    HYS_200MV = 0x04
+    HYS_400MV = 0x05
+    HYS_800MV = 0x06
+    HYS_1600MV = 0x07
 
 
 class GPIO_THR(EnumBase):
@@ -191,8 +226,15 @@ class GPIO_THR(EnumBase):
 
 
 class GPIO_POL(EnumBase):
-    POL_ACTIVE_HIGH = 0x00
-    POL_ACTIVE_LOW = 0x01
+    ACTIVE_HIGH = 0x00
+    ACTIVE_LOW = 0x01
+
+
+class GPIO_FILT(EnumBase):
+    FILT_OFF = 0x00
+    FILT_SOFT = 0x01
+    FILT_MEDIUM = 0x02
+    FILT_HARD = 0x03
 
 
 class UART_MODE(EnumBase):
@@ -308,9 +350,10 @@ class SAVE_LED_CONF(EnumBase):
 class SAVE_UART_CONF(EnumBase):
     SAVE_NONE = 0x00
     SAVE_UART_RS485 = 0x01
-    SAVE_UART_MIKROBUS2 = 0x02
-    SAVE_UART_BOTH = 0x03
+    # SAVE_UART_MIKROBUS2 = 0x02
+    # SAVE_UART_BOTH = 0x03
     SAVE_UART_SWITCH = 0x04
+    SAVE_CANBUS = 0x08
 
 
 class SAVE_IO_CONF(EnumBase):
@@ -352,6 +395,45 @@ class SWITCH_USB(EnumBase):
     USB_DEBUG = 0x03
 
 
+class CAN_STATUS(EnumBase):
+    CAN_OK = 0x00
+    CAN_PENDING = 0x01
+    CAN_FIFO_FULL = 0x02
+
+
+class CAN_BAUDRATE(EnumBase):
+    CAN_SPEED_5KBPS = 0x00
+    CAN_SPEED_10KBPS = 0x01
+    CAN_SPEED_16K6BPS = 0x02
+    CAN_SPEED_20KBPS = 0x03
+    CAN_SPEED_25KBPS = 0x04
+    CAN_SPEED_31K25BPS = 0x05
+    CAN_SPEED_33KBPS = 0x06
+    CAN_SPEED_40KBPS = 0x07
+    CAN_SPEED_50KBPS = 0x08
+    CAN_SPEED_80KBPS = 0x09
+    CAN_SPEED_83K3BPS = 0x0A
+    CAN_SPEED_95KBPS = 0x0B
+    CAN_SPEED_100KBPS = 0x0C
+    CAN_SPEED_125KBPS = 0x0D
+    CAN_SPEED_200KBPS = 0x0E
+    CAN_SPEED_250KBPS = 0x0F
+    CAN_SPEED_500KBPS = 0x10
+    CAN_SPEED_666KBPS = 0x11
+    CAN_SPEED_800KBPS = 0x12
+    CAN_SPEED_1000KBPS = 0x13
+
+
+class CAN_MODE(EnumBase):
+    CAN_MODE_NONE           = 0x00
+    CAN_MODE_MONITOR        = 0x01  # Monitor mode for 11-bit IDs
+    CAN_MODE_MONITOR_EXTID  = 0x02  # Monitor mode for 29-bit IDs
+    CAN_MODE_MONITOR_NOFILT = 0x03  # Monitor mode without filtering (11-bit and 29-bit IDs)
+    CAN_MODE_NORMAL         = 0x04  # Normal TX/RX mode for 11-bit IDs
+    CAN_MODE_NORMAL_EXTID   = 0x05  # Normal TX/RX mode for 29-bit IDs
+    CAN_MODE_NORMAL_NOFILT  = 0x06  # Normal TX/RX mode without filtering (11-bit and 29-bit IDs)
+
+
 class REGMAP():
     IO_HEADER = {'header': '   External IO registers (IO1-IO3):', 'data': [
         ['   Config', 'Set IO mode (required)'],
@@ -370,6 +452,7 @@ class REGMAP():
         REG.RW_GPIO1_DAC_VAL: {'nicename': 'IO1 DAC Value (mV)', 'rw': 'rw', 'format': 'dec'},
         REG.RW_GPIO1_DIG_VAL1: {'nicename': 'IO1 DIG1 Value', 'rw': 'rw', 'format': 'dec'},
         REG.RW_GPIO1_DIG_VAL2: {'nicename': 'IO1 DIG2 Value', 'rw': 'rw', 'format': 'dec'},
+        REG.RW_GPIO1_DIG_VAL3: {'nicename': 'IO1 DIG3 Value', 'rw': 'rw', 'format': 'dec'},
         -1: IO_HEADER,
     }
 
@@ -380,6 +463,7 @@ class REGMAP():
         REG.RW_GPIO2_DAC_VAL: {'nicename': 'IO2 DAC Value (mV)', 'rw': 'rw', 'format': 'dec'},
         REG.RW_GPIO2_DIG_VAL1: {'nicename': 'IO2 DIG1 Value', 'rw': 'rw', 'format': 'dec'},
         REG.RW_GPIO2_DIG_VAL2: {'nicename': 'IO2 DIG2 Value', 'rw': 'rw', 'format': 'dec'},
+        REG.RW_GPIO2_DIG_VAL3: {'nicename': 'IO2 DIG3 Value', 'rw': 'rw', 'format': 'dec'},
         -1: IO_HEADER,
     }
 
@@ -390,6 +474,7 @@ class REGMAP():
         REG.RW_GPIO3_DAC_VAL: {'nicename': 'IO3 DAC Value (mV)', 'rw': 'rw', 'format': 'dec'},
         REG.RW_GPIO3_DIG_VAL1: {'nicename': 'IO3 DIG1 Value', 'rw': 'rw', 'format': 'dec'},
         REG.RW_GPIO3_DIG_VAL2: {'nicename': 'IO3 DIG2 Value', 'rw': 'rw', 'format': 'dec'},
+        REG.RW_GPIO3_DIG_VAL3: {'nicename': 'IO3 DIG3 Value', 'rw': 'rw', 'format': 'dec'},
         -1: IO_HEADER,
     }
 
@@ -400,6 +485,7 @@ class REGMAP():
         REG.RW_GPIO4_DAC_VAL: {'nicename': 'IO4 DAC Value (mV)', 'rw': 'rw', 'format': 'dec'},
         REG.RW_GPIO4_DIG_VAL1: {'nicename': 'IO4 DIG1 Value', 'rw': 'rw', 'format': 'dec'},
         REG.RW_GPIO4_DIG_VAL2: {'nicename': 'IO4 DIG2 Value', 'rw': 'rw', 'format': 'dec'},
+        REG.RW_GPIO4_DIG_VAL3: {'nicename': 'IO4 DIG3 Value', 'rw': 'rw', 'format': 'dec'},
         -1: IO_HEADER,
     }
 
@@ -450,7 +536,7 @@ class REGMAP():
         REG.R_HW_INFO: {'nicename': 'HW version', 'rw': 'r', 'format': 'hex'},
         REG.R_3V3_VAL: {'nicename': '3V3 rail voltage (mV)', 'rw': 'r', 'format': 'dec'},
         REG.R_5V0_VAL: {'nicename': '5V0 rail voltage (mV)', 'rw': 'r', 'format': 'dec'},
-        REG.R_TEMP_VAL: {'nicename': 'Board temperature (°C)', 'rw': 'r', 'format': 'dec'},
+        REG.R_TEMP_VAL: {'nicename': 'Board temperature (°K)', 'rw': 'r', 'format': 'dec'},
         REG.R_SWITCH_VAL: {'nicename': 'Switch value', 'rw': 'r', 'format': 'dec'},
         REG.RW_LED_CONF: {'nicename': 'LED Config', 'rw': 'rw', 'format': 'hex', 'conf': True},
         REG.R_GPIO_M1_AN_ADC_VAL: {'nicename': 'Mikrobus1 AN (mV)', 'rw': 'r', 'format': 'dec'},
@@ -475,7 +561,7 @@ class REGMAP():
 
     REG_MAP_EXPERT_ZONE = {
         REG.W_LED_SAVE: {'nicename': 'Write LED config to EEPROM', 'rw': 'w', 'format': 'bin', 'conf': True},
-        REG.W_UART_SAVE: {'nicename': 'Write UART config to EEPROM', 'rw': 'w', 'format': 'bin', 'conf': True},
+        REG.W_UART_SAVE: {'nicename': 'Write UART/CAN config to EEPROM', 'rw': 'w', 'format': 'bin', 'conf': True},
         REG.W_GPIO_SAVE: {'nicename': 'Write GPIO config to EEPROM', 'rw': 'w', 'format': 'bin', 'conf': True},
         REG.W_BOOTLOADER: {'nicename': 'ESP32/STM32 reset and boot', 'rw': 'w', 'format': 'bin', 'conf': True},
         REG.RW_ESP32_DELAY: {'nicename': 'ESP32 startup delay (ms)', 'rw': 'rw', 'format': 'dec'},
@@ -484,6 +570,42 @@ class REGMAP():
         REG.R_PERF_CNT3: {'nicename': 'Min loop time (ms)', 'rw': 'r', 'format': 'dec'},
         REG.R_DEBUG1: {'nicename': 'Debug register 1', 'rw': 'r', 'format': 'dec'},
         REG.R_DEBUG2: {'nicename': 'Debug register 2', 'rw': 'r', 'format': 'dec'},
+    }
+
+    REG_MAP_CAN_RX = {
+        REG.R_CAN_RX_STATUS: {'nicename': 'CAN receive status', 'rw': 'r', 'format': 'hex'},
+        REG.R_CAN_RX_PEND: {'nicename': 'CAN pending frames', 'rw': 'r', 'format': 'dec'},
+        REG.R_CAN_RX_LEN: {'nicename': 'CAN frame data len (N bytes)', 'rw': 'r', 'format': 'dec'},
+        REG.R_CAN_RX_ID1: {'nicename': 'CAN frame ID (byte 0..1)', 'rw': 'r', 'format': 'hex'},
+        REG.R_CAN_RX_ID2: {'nicename': 'CAN frame ID (byte 2..3)', 'rw': 'r', 'format': 'hex'},
+        REG.R_CAN_RX_DATA1: {'nicename': 'CAN frame data (byte 0..1)', 'rw': 'r', 'format': 'hex'},
+        REG.R_CAN_RX_DATA2: {'nicename': 'CAN frame data (byte 2..3)', 'rw': 'r', 'format': 'hex'},
+        REG.R_CAN_RX_DATA3: {'nicename': 'CAN frame data (byte 4..5)', 'rw': 'r', 'format': 'hex'},
+        REG.R_CAN_RX_DATA4: {'nicename': 'CAN frame data (byte 6..7)', 'rw': 'r', 'format': 'hex'},
+        REG.R_CAN_RX_ERRCNT: {'nicename': 'CAN receive error counter', 'rw': 'r', 'format': 'dec'},
+    }
+
+    REG_MAP_CAN_TX = {
+        REG.R_CAN_TX_STATUS: {'nicename': 'CAN transmit status', 'rw': 'r', 'format': 'hex'},
+        REG.R_CAN_TX_PEND: {'nicename': 'CAN pending frames', 'rw': 'r', 'format': 'dec'},
+        REG.RW_CAN_TX_LEN: {'nicename': 'CAN frame data len (N bytes)', 'rw': 'rw', 'format': 'dec'},
+        REG.RW_CAN_TX_ID1: {'nicename': 'CAN frame ID (byte 0..1)', 'rw': 'rw', 'format': 'hex'},
+        REG.RW_CAN_TX_ID2: {'nicename': 'CAN frame ID (byte 2..3)', 'rw': 'rw', 'format': 'hex'},
+        REG.RW_CAN_TX_DATA1: {'nicename': 'CAN frame data (byte 0..1)', 'rw': 'rw', 'format': 'hex'},
+        REG.RW_CAN_TX_DATA2: {'nicename': 'CAN frame data (byte 2..3)', 'rw': 'rw', 'format': 'hex'},
+        REG.RW_CAN_TX_DATA3: {'nicename': 'CAN frame data (byte 4..5)', 'rw': 'rw', 'format': 'hex'},
+        REG.RW_CAN_TX_DATA4: {'nicename': 'CAN frame data (byte 6..7)', 'rw': 'rw', 'format': 'hex'},
+        REG.RW_CAN_TX_SEND: {'nicename': 'CAN send frame (write "1")', 'rw': 'rw', 'format': 'hex'},
+        REG.R_CAN_TX_ERRCNT: {'nicename': 'CAN transmit error counter', 'rw': 'r', 'format': 'dec'},
+    }
+
+    REG_MAP_CAN_CONF = {
+        REG.RW_CAN_CONF1: {'nicename': 'CAN bus Config', 'rw': 'rw', 'format': 'hex', 'conf': True},
+        REG.RW_CAN_CONF2: {'nicename': 'CAN bus Baudrate', 'rw': 'rw', 'format': 'hex', 'conf': True},
+        REG.RW_CAN_FILT1_HIGH: {'nicename': 'CAN filter (MS word)', 'rw': 'rw', 'format': 'hex'},
+        REG.RW_CAN_FILT1_LOW: {'nicename': 'CAN filter (LS word)', 'rw': 'rw', 'format': 'hex'},
+        REG.RW_CAN_FILT2_HIGH: {'nicename': 'CAN filter mask (MS word)', 'rw': 'rw', 'format': 'hex'},
+        REG.RW_CAN_FILT2_LOW: {'nicename': 'CAN filter mask (LS word)', 'rw': 'rw', 'format': 'hex'},
     }
 
 

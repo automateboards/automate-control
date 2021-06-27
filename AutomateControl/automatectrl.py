@@ -5,6 +5,7 @@ import platform
 import os
 import sys
 import PySimpleGUI as sg
+import datetime
 
 from utils import *
 from connection import DeviceConnection
@@ -31,6 +32,9 @@ GUI_TABKEY_RTC              = "_TAB_KEY_RTC_"
 GUI_TABKEY_GEN_INFO         = "_TAB_KEY_GEN_INFO_"
 GUI_TABKEY_NETWORK          = "_TAB_KEY_NETWORK_"
 GUI_TABKEY_UART             = "_TAB_KEY_UART_"
+GUI_TABKEY_CAN_RX           = "_TAB_KEY_CAN_RX_"
+GUI_TABKEY_CAN_TX           = "_TAB_KEY_CAN_TX_"
+GUI_TABKEY_CAN_CONF         = "_TAB_KEY_CAN_CONF_"
 GUI_TABKEY_ADVANCED         = "_TAB_KEY_ADVANCED_"
 GUI_TABKEY_EXPERT           = "_TAB_KEY_EXPERT_"
 
@@ -45,9 +49,12 @@ GUI_KEY_DMX512_SLOT         = "_KEY_TEXT_DMX512_SLOT_"
 GUI_KEY_DMX512_TXVAL        = "_KEY_TEXT_DMX512_VAL_"
 GUI_KEY_DMX512_TXBUT        = "_KEY_TEXT_DMX512_TXBUT_"
 
+GUI_KEY_CAN_LOG             = "_KEY_TEXT_CAN_LOG_"
+
 GUI_OK                      = "Ok"
 GUI_CANCEL                  = "Cancel"
 
+modbus_request = False
 
 def get_window_location(sizex, sizey):
     """Helper to get center coordinates of window"""
@@ -65,6 +72,8 @@ def register_decoder(register_address, register_value):
             response += ", " + str(GPIO_PULL((register_value & 0x1800) >> 11).name)
             response += ", " + str(GPIO_THR((register_value & 0x00F0) >> 4).name)
             response += ", " + str(GPIO_HYST((register_value & 0x000F) >> 0).name)
+            response += ", " + str(GPIO_POL((register_value & 0x0400) >> 10).name)
+            response += ", " + str(GPIO_FILT((register_value & 0x0300) >> 8).name)
             return response
 
         # Decode SW version info
@@ -78,9 +87,18 @@ def register_decoder(register_address, register_value):
                        (BOARD_TYPE((register_value & 0xF000) >> 12).name,
                         BOARD_VARIANT((register_value & 0x0F00) >> 8).name, (register_value & 0x00FF)))
 
+        # Decode board temperature to °C
+        elif register_address == REG.R_TEMP_VAL:
+            return str("%i°C" % (register_value - 273))
+
         # Decode LED Config
         elif register_address == REG.RW_LED_CONF:
             return str("LED0 %s" % (LED_MODE(register_value & 0x000F).name))
+
+        # Decode Tactile switch register
+        elif register_address == REG.R_SWITCH_VAL:
+            return str("%ims pressed, state %s" % (((register_value & 0xFFFE) >> 1) * 10,
+                                                  "ON" if (register_value & 0x0001) else "OFF"))
 
         # Decode IO1-IO4 function registers
         elif REG.RW_GPIO1_CONF2 <= register_address <= REG.RW_GPIO4_CONF2:
@@ -112,6 +130,16 @@ def register_decoder(register_address, register_value):
         # Decode USB and UART switch state
         elif register_address == REG.RW_SWITCH_CONF:
             return str("%s" % (SWITCH_UART(register_value).name))
+
+        # Decode CAN registers
+        elif register_address == REG.R_CAN_TX_STATUS:
+            return str("%s" % (CAN_STATUS(register_value).name))
+        elif register_address == REG.R_CAN_RX_STATUS:
+            return str("%s" % (CAN_STATUS(register_value).name))
+        elif register_address == REG.RW_CAN_CONF1:
+            return str(CAN_MODE((register_value & 0xFF00) >> 8).name)
+        elif register_address == REG.RW_CAN_CONF2:
+            return str("%s" % (CAN_BAUDRATE(register_value).name))
 
     except Exception:
         return "ERROR"
@@ -152,6 +180,8 @@ def format_response(register_address, value, window_values, decode=True):
 
 
 def gui_format_tab(reg_map_dict):
+    """Format registers in active GUI tab"""
+
     response = []
 
     for key in reg_map_dict.keys():
@@ -205,6 +235,7 @@ def gui_format_tab(reg_map_dict):
 
 
 def gui_format_tab_uart(reg_map_dict):
+    """Format registers in UART/RS485 GUI tab"""
 
     response = gui_format_tab(reg_map_dict)
 
@@ -242,6 +273,8 @@ def gui_format_tab_uart(reg_map_dict):
 
 
 def gui_config_popup(settings):
+    """Popup window to configure register value before write"""
+
     layout_popup = [[sg.Text('Configuration')]]
 
     for idx, setting in enumerate(settings):
@@ -310,9 +343,6 @@ def gui_connection_popup():
     window_popup.close()
 
     return ['uart' if values[USB_EN_KEY] else 'i2c', values[OPT1_KEY], values[OPT2_KEY]]
-
-
-modbus_request = False
 
 
 def main():
@@ -389,11 +419,6 @@ def main():
 
         global modbus_request
 
-        # txval_str = str("%02x%02x %04x %04x" % (Convert.str_to_int(values[GUI_KEY_MODBUS_SLAVE]),
-        #                                         Convert.str_to_int(values[GUI_KEY_MODBUS_CODE]),
-        #                                         Convert.str_to_int(values[GUI_KEY_MODBUS_REG]),
-        #                                         Convert.str_to_int(values[GUI_KEY_MODBUS_REG_LEN])))
-
         modbus_enabled = 'modbus' in values[str('_KEY_TEXT_%s' % REG.RW_UART_RS485_CONF1)].lower()
         dmx512_enabled = 'dmx512' in values[str('_KEY_TEXT_%s' % REG.RW_UART_RS485_CONF1)].lower()
         gui_window[GUI_KEY_MODBUS_TXBUT].update(disabled=not modbus_enabled)
@@ -413,6 +438,55 @@ def main():
                 modbus_request = False
             else:
                 gui_window[GUI_KEY_MODBUS_RESP].update(value=str(UART_STATE(rx_state).name))
+
+    def gui_update_canrx():
+        """Get / update can RX messages"""
+
+        reg_start = REG.R_CAN_RX_STATUS
+        reg_stop = REG.R_CAN_RX_ERRCNT
+
+        while True:
+            reg_values = dev_con.get_registers(reg_start, reg_stop - reg_start + 1)
+            for i in range(reg_start, reg_stop + 1):
+                if str('_KEY_TEXT_%i' % i) in gui_window.AllKeysDict:
+                    if not values[str('_KEY_EDIT_%i' % i)]:
+                        gui_window[str('_KEY_TEXT_%i' % i)].update(value=format_response(i, reg_values[i - reg_start], values))
+
+            if int(reg_values[REG.R_CAN_RX_PEND - reg_start]) > 0:
+
+                frame_txt = str(datetime.datetime.now().time())
+
+                can_id = int(reg_values[REG.R_CAN_RX_ID2 - reg_start])
+                can_data_len = int(reg_values[REG.R_CAN_RX_LEN - reg_start])
+
+                # ID1 is only used for the upper 13-bits of an extended 29-bit id scheme
+                # All bits are set if the received frame is the regular format (11-bit id)
+                if int(reg_values[REG.R_CAN_RX_ID1 - reg_start]) != 0xFFFF:
+                    can_id += (int(reg_values[REG.R_CAN_RX_ID1 - reg_start]) << 16)
+                    frame_txt += str(" - Extended ID: %08X Data: " % can_id)
+                else:
+                    frame_txt += str(" - ID: %03X Data: " % can_id)
+
+                for i in range(4):
+                    if can_data_len <= 0:
+                        break
+
+                    frame_txt += str("%02X " % ((int(reg_values[REG.R_CAN_RX_DATA1 - reg_start + i]) & 0xFF00) >> 8))
+                    can_data_len -= 1
+
+                    if can_data_len <= 0:
+                        break
+
+                    frame_txt += str("%02X " % ((int(reg_values[REG.R_CAN_RX_DATA1 - reg_start + i]) & 0x00FF) >> 0))
+                    can_data_len -= 1
+
+                gui_window[GUI_KEY_CAN_LOG + sg.WRITE_ONLY_KEY].print(frame_txt)
+
+                # Even more frames in FIFO buffer, read them now
+                if int(reg_values[REG.R_CAN_RX_PEND - reg_start]) > 1:
+                    continue
+
+            break
 
     # Build GUI tab layout
     gui_layout_tabs = []
@@ -453,6 +527,14 @@ def main():
     # Add RS485, RTC and CAN bus tabs only if supported by board
     if rs485_supported:
         gui_layout_tabs.append(sg.Tab('RS485', uart_layout, tooltip='UART and RS485 settings', key=GUI_TABKEY_UART))
+    if can_supported:
+        gui_layout_tabs.append(sg.Tab('CAN bus Config', gui_format_tab(REGMAP.REG_MAP_CAN_CONF), tooltip='CAN bus Config', key=GUI_TABKEY_CAN_CONF))
+        gui_layout_tabs.append(sg.Tab('CAN bus TX', gui_format_tab(REGMAP.REG_MAP_CAN_TX), tooltip='CAN bus TX', key=GUI_TABKEY_CAN_TX))
+        can_rx_layout = gui_format_tab(REGMAP.REG_MAP_CAN_RX)
+        can_rx_layout.append([sg.Text('')])
+        can_rx_layout.append([sg.Text('Receive log', size=(CONF_REG_MODBUS_DESC_WIDTH, 15)),
+                           sg.MLine('', size=(CONF_REG_VALUE_WIDTH, 15), key=GUI_KEY_CAN_LOG + sg.WRITE_ONLY_KEY)])
+        gui_layout_tabs.append(sg.Tab('CAN bus RX', can_rx_layout, tooltip='CAN bus RX', key=GUI_TABKEY_CAN_RX))
     if rtc_supported:
         gui_layout_tabs.append(
             sg.Tab('RTC', gui_format_tab(REGMAP.MAP_RTC), tooltip='Real time clock', key=GUI_TABKEY_RTC))
@@ -469,7 +551,7 @@ def main():
 
     # Poll registers continuously for updates
     while True:
-        event, values = gui_window.read(timeout=250)
+        event, values = gui_window.read(timeout=1000) #250)
         if event in (sg.WIN_CLOSED, 'Quit'):
             break
 
@@ -496,7 +578,7 @@ def main():
             # Write local IO1-IO4 GPIO configuration registers
             if REG.RW_GPIO1_CONF1 <= index <= REG.RW_GPIO4_CONF1:
 
-                response = gui_config_popup([GPIO_MODE, GPIO_PULL, GPIO_THR, GPIO_HYST, GPIO_POL])
+                response = gui_config_popup([GPIO_MODE, GPIO_PULL, GPIO_THR, GPIO_HYST, GPIO_POL, GPIO_FILT])
 
                 if response:
                     register_value |= (response[0] << 13)
@@ -504,6 +586,7 @@ def main():
                     register_value |= (response[2] << 4)
                     register_value |= (response[3] << 0)
                     register_value |= (response[4] << 10)
+                    register_value |= (response[5] << 8)
 
                     gui_window[str('_KEY_TEXT_%i' % index)].update(
                         value=format_response(index, register_value, values, False))
@@ -624,6 +707,28 @@ def main():
                     gui_window[str('_KEY_TEXT_%i' % index)].update(
                         value=format_response(index, register_value, values, False))
 
+            # Write CAN config register
+            elif index == REG.RW_CAN_CONF1:
+
+                response = gui_config_popup([CAN_MODE])
+
+                if response:
+                    register_value |= (response[0] << 8)
+
+                    gui_window[str('_KEY_TEXT_%i' % index)].update(
+                        value=format_response(index, register_value, values, False))
+
+            # Write CAN baudrate
+            elif index == REG.RW_CAN_CONF2:
+
+                response = gui_config_popup([CAN_BAUDRATE])
+
+                if response:
+                    register_value = response[0]
+
+                    gui_window[str('_KEY_TEXT_%i' % index)].update(
+                        value=format_response(index, register_value, values, False))
+
         elif event.startswith(GUI_KEY_MODBUS_TXBUT):
             gui_window[GUI_KEY_MODBUS_RESP].update(value='pending...')
 
@@ -697,6 +802,7 @@ def main():
             gui_update_tab(REG.RW_GPIO1_DAC_VAL, REG.RW_GPIO4_DAC_VAL)
             gui_update_tab(REG.RW_GPIO1_DIG_VAL1, REG.RW_GPIO4_DIG_VAL1)
             gui_update_tab(REG.RW_GPIO1_DIG_VAL2, REG.RW_GPIO4_DIG_VAL2)
+            gui_update_tab(REG.RW_GPIO1_DIG_VAL3, REG.RW_GPIO4_DIG_VAL3)
             gui_update_tab(REG.RW_GPIO1_CONF1, REG.RW_GPIO4_CONF2)
 
         elif values['_TABGROUP_'] == GUI_TABKEY_IO_EXP:
@@ -705,6 +811,15 @@ def main():
 
         elif values['_TABGROUP_'] == GUI_TABKEY_RTC:
             gui_update_tab(REG.RW_RTC_SEC_VAL, REG.RW_RTC_WDAY_VAL)
+
+        elif values['_TABGROUP_'] == GUI_TABKEY_CAN_CONF:
+            gui_update_tab(REG.RW_CAN_CONF1, REG.RW_CAN_FILT2_LOW)
+
+        elif values['_TABGROUP_'] == GUI_TABKEY_CAN_RX:
+            gui_update_canrx()
+
+        elif values['_TABGROUP_'] == GUI_TABKEY_CAN_TX:
+            gui_update_tab(REG.R_CAN_TX_STATUS, REG.R_CAN_TX_ERRCNT)
 
         elif values['_TABGROUP_'] == GUI_TABKEY_GEN_INFO:
             gui_update_tab(REG.R_SW_INFO, REG.R_SWITCH_VAL)
