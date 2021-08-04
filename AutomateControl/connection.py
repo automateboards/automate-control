@@ -2,6 +2,7 @@
 
 from smbus import SMBus
 import serial
+import time
 
 I2C_ADDRESS         = 0x08
 I2C_BUS             = 0x01
@@ -34,6 +35,7 @@ class DeviceConnection(object):
             )
         else:
             self._con = SMBus(bus)
+            time.sleep(1)
 
     def disconnect(self):
         """Disconnect UART or I2C connection"""

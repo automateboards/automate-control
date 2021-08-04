@@ -452,7 +452,7 @@ class REGMAP():
         REG.RW_GPIO1_DAC_VAL: {'nicename': 'IO1 DAC Value (mV)', 'rw': 'rw', 'format': 'dec'},
         REG.RW_GPIO1_DIG_VAL1: {'nicename': 'IO1 DIG1 Value', 'rw': 'rw', 'format': 'dec'},
         REG.RW_GPIO1_DIG_VAL2: {'nicename': 'IO1 DIG2 Value', 'rw': 'rw', 'format': 'dec'},
-        REG.RW_GPIO1_DIG_VAL3: {'nicename': 'IO1 DIG3 Value', 'rw': 'rw', 'format': 'dec'},
+        REG.RW_GPIO1_DIG_VAL3: {'nicename': 'IO1 DIG3 Value', 'rw': 'r', 'format': 'dec'},
         -1: IO_HEADER,
     }
 
@@ -463,7 +463,7 @@ class REGMAP():
         REG.RW_GPIO2_DAC_VAL: {'nicename': 'IO2 DAC Value (mV)', 'rw': 'rw', 'format': 'dec'},
         REG.RW_GPIO2_DIG_VAL1: {'nicename': 'IO2 DIG1 Value', 'rw': 'rw', 'format': 'dec'},
         REG.RW_GPIO2_DIG_VAL2: {'nicename': 'IO2 DIG2 Value', 'rw': 'rw', 'format': 'dec'},
-        REG.RW_GPIO2_DIG_VAL3: {'nicename': 'IO2 DIG3 Value', 'rw': 'rw', 'format': 'dec'},
+        REG.RW_GPIO2_DIG_VAL3: {'nicename': 'IO2 DIG3 Value', 'rw': 'r', 'format': 'dec'},
         -1: IO_HEADER,
     }
 
@@ -474,7 +474,7 @@ class REGMAP():
         REG.RW_GPIO3_DAC_VAL: {'nicename': 'IO3 DAC Value (mV)', 'rw': 'rw', 'format': 'dec'},
         REG.RW_GPIO3_DIG_VAL1: {'nicename': 'IO3 DIG1 Value', 'rw': 'rw', 'format': 'dec'},
         REG.RW_GPIO3_DIG_VAL2: {'nicename': 'IO3 DIG2 Value', 'rw': 'rw', 'format': 'dec'},
-        REG.RW_GPIO3_DIG_VAL3: {'nicename': 'IO3 DIG3 Value', 'rw': 'rw', 'format': 'dec'},
+        REG.RW_GPIO3_DIG_VAL3: {'nicename': 'IO3 DIG3 Value', 'rw': 'r', 'format': 'dec'},
         -1: IO_HEADER,
     }
 

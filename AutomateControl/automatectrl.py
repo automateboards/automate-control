@@ -12,7 +12,7 @@ from connection import DeviceConnection
 from screeninfo import get_monitors
 
 DEFAULT_UART_PORT           = ""
-DEFAULT_I2C_ADDRESS         = 0x2A
+DEFAULT_I2C_ADDRESS         = 0x20 #0x2A
 DEFAULT_I2C_BUS             = 0x01
 
 CONF_REG_VALUE_WIDTH        = 64
@@ -387,9 +387,9 @@ def main():
             if _type == 'uart':
                 dev_con = DeviceConnection(mode='uart_usb', port=opt1)
             else:
-                dev_con = DeviceConnection(mode='i2c', port=opt1, bus=opt2)
+                dev_con = DeviceConnection(mode='i2c', address=Convert.str_to_int(opt1), bus=Convert.str_to_int(opt2))
             break
-        except Exception:
+        except Exception as msg:
             sg.Popup('Connection failed!', location=(SCREEN_POS_X, SCREEN_POS_Y))
 
     # Get board hardware info
@@ -551,7 +551,7 @@ def main():
 
     # Poll registers continuously for updates
     while True:
-        event, values = gui_window.read(timeout=1000) #250)
+        event, values = gui_window.read(timeout=250)
         if event in (sg.WIN_CLOSED, 'Quit'):
             break
 
